@@ -10,3 +10,4 @@ desktop/release/
 backend/media/
 backend/backups/
 backend/staticfiles/
+*.tsbuildinfo
