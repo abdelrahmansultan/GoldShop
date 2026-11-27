@@ -1,0 +1,68 @@
+# Production-style stack: PostgreSQL, Redis, Django API, Celery worker + beat, nginx (web UI).
+# Usage: cp .env.example .env   (edit every secret)   then:   docker compose up -d --build
+x-backend-env: &backend-env
+  POSTGRES_HOST: db
+  REDIS_URL: redis://redis:6379/0
+  MEDIA_ROOT: /data/media
+  BACKUP_DIR: /data/backups
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-goldshop}
+      POSTGRES_USER: ${POSTGRES_USER:-goldshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *backend-env
+      RUN_MIGRATIONS: "1"
+    volumes: [media:/data/media, backups:/data/backups, static:/app/staticfiles]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    ports: ["${API_PORT:-8000}:8000"]   # reachable by Windows desktop clients on the shop LAN
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/')"]
+      interval: 15s
+      retries: 10
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment: { <<: *backend-env, RUN_MIGRATIONS: "0" }
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "2"]
+    volumes: [media:/data/media, backups:/data/backups]
+    depends_on: { backend: { condition: service_healthy } }
+
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment: { <<: *backend-env, RUN_MIGRATIONS: "0" }
+    command: ["celery", "-A", "config", "beat", "-l", "info", "-s", "/tmp/celerybeat-schedule"]
+    depends_on: { backend: { condition: service_healthy } }
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports: ["${WEB_PORT:-80}:80"]
+    volumes: [media:/media:ro, static:/static:ro]
+    depends_on: [backend]
+
+volumes: { pgdata: {}, media: {}, backups: {}, static: {} }

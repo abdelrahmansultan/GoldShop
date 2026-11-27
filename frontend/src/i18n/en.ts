@@ -1,0 +1,152 @@
+const en = {
+  app: { name: "Gold Shop ERP", tagline: "Jewelry management system", currency: "EGP" },
+  nav: {
+    dashboard: "Dashboard", pos: "New sale", invoices: "Sales invoices", returns: "Returns", prices: "Gold prices",
+    inventory: "Inventory", adjustments: "Adjustments", counts: "Stock counts", scrap: "Old gold",
+    purchases: "Purchases", customers: "Customers", suppliers: "Suppliers", treasury: "Treasury",
+    expenses: "Expenses", reports: "Reports", users: "Users", settings: "Settings", audit: "Audit log",
+    sales: "Sales", stock: "Stock", finance: "Finance", admin: "Administration",
+  },
+  common: {
+    save: "Save", cancel: "Cancel", confirm: "Confirm", close: "Close", add: "Add", edit: "Edit", create: "Create",
+    search: "Search", filter: "Filter", all: "All", yes: "Yes", no: "No", loading: "Loading…", none: "None",
+    actions: "Actions", status: "Status", date: "Date", from: "From", to: "To", total: "Total", notes: "Notes",
+    name: "Name", nameAr: "Name (Arabic)", nameEn: "Name (English)", phone: "Phone", address: "Address",
+    active: "Active", inactive: "Inactive", description: "Description", amount: "Amount", reason: "Reason",
+    print: "Print", back: "Back", view: "View", details: "Details", noData: "No records found",
+    required: "Required", quantity: "Qty", code: "Code", type: "Type", user: "User", reference: "Reference",
+    next: "Next", previous: "Previous", page: "Page {{page}} of {{pages}}", balance: "Balance", remove: "Remove",
+    apply: "Apply", reset: "Reset", optional: "optional", saved: "Saved successfully", account: "Account",
+    method: "Method", approve: "Approve", reject: "Reject", records: "{{count}} records", refresh: "Refresh",
+  },
+  auth: {
+    title: "Sign in", username: "Username", password: "Password", submit: "Sign in", logout: "Sign out",
+    invalid: "Invalid username or password", profile: "My profile", changePassword: "Change password",
+    oldPassword: "Current password", newPassword: "New password", language: "Language",
+  },
+  errors: { network: "Cannot reach the server. Check the connection.", generic: "Something went wrong" },
+  dash: {
+    todaySales: "Today's sales", todayPurchases: "Today's purchases", todayExpenses: "Today's expenses",
+    grossProfit: "Gross profit", netProfit: "Net profit (after expenses)", cash: "Cash balance", bank: "Bank balance",
+    receivables: "Customer receivables", payables: "Supplier payables", goldWeight: "Gold in stock",
+    goldValue: "Gold value (buy price)", products: "Available items", lowStock: "Low stock",
+    discrepancies: "Pending adjustments", byKarat: "Gold inventory by karat", recentInvoices: "Recent invoices",
+    recentTx: "Recent transactions", topItems: "Top selling (30 days)", dailySales: "Daily sales (30 days)",
+    monthly: "Monthly revenue", byMethod: "Sales by payment method (30 days)", invoicesCount: "{{count}} invoices",
+    pure: "Fine gold", scrap: "Old gold", valueIncomplete: "Value incomplete: some karats have no price",
+    returns: "Returns", topCategories: "Top categories", revenue: "Revenue", profit: "Profit",
+  },
+  prices: {
+    title: "Gold prices", board: "Current price board", enter: "Enter new prices", history: "Price history",
+    buy: "Buy / g", sell: "Sell / g", karat: "Karat", source: "Source", effectiveAt: "Effective at",
+    enteredBy: "Entered by", lastUpdate: "Last update", stale: "Outdated", missing: "No price entered",
+    fresh: "Current", note: "Note", sources: "Price sources", warnNoInvent:
+      "Prices are entered by authorized staff or synced from a configured provider. The system never estimates prices.",
+    saved: "Prices recorded", lastSync: "Last successful sync", lastError: "Last error", provider: "Provider key",
+    perGram: "EGP per gram", buyAboveSell: "Buying price cannot exceed selling price",
+  },
+  inv: {
+    title: "Inventory", newItem: "New item", item: "Item", barcode: "Barcode", category: "Category",
+    jewelryType: "Jewelry type", karat: "Karat", tracking: "Tracking", piece: "Serialized piece",
+    quantityBased: "Quantity based", gross: "Gross weight", stone: "Stone weight", net: "Net gold weight",
+    qtyOnHand: "On hand", reorder: "Reorder level", pricingMode: "Pricing", byWeight: "By weight",
+    fixed: "Fixed price", makingType: "Making charge type", makingValue: "Making charge", perGram: "Per gram",
+    perPiece: "Per piece", percent: "Percent of gold", stonesValue: "Stones value", sellingPrice: "Selling price",
+    purchaseCost: "Purchase cost", supplier: "Supplier", purchaseDate: "Purchase date", image: "Image",
+    openingQty: "Opening quantity", movements: "Stock movements", minWeight: "Min weight", maxWeight: "Max weight",
+    inStock: "In stock", scan: "Scan or type barcode…", valuation: "Valuation", weightLocked:
+      "Weights and karat can only be changed through an approved adjustment.",
+    requestAdjustment: "Request adjustment", qtyDelta: "Quantity change (+/-)", newGross: "New gross weight",
+    newStone: "New stone weight", status: {
+      available: "Available", reserved: "Reserved", sold: "Sold", returned_to_supplier: "Returned to supplier",
+      inactive: "Inactive",
+    },
+    mv: {
+      opening: "Opening", purchase: "Purchase", sale: "Sale", sale_return: "Sales return",
+      purchase_return: "Return to supplier", adjustment: "Adjustment", weight_correction: "Weight correction",
+    },
+    qtyAfter: "Qty after", created: "Item created", lookups: "Categories & types",
+  },
+  adj: {
+    title: "Inventory adjustments", pending: "Pending", approved: "Approved", rejected: "Rejected",
+    requestedBy: "Requested by", decidedBy: "Decided by", decision: "Decision note", confirmApprove:
+      "Approve this adjustment? Stock will change immediately.", requested: "Adjustment requested",
+  },
+  count: {
+    title: "Physical stock counts", start: "Start new count", name: "Count name", progress: "Progress",
+    expected: "Expected", counted: "Counted", diff: "Difference", finalize: "Finalize count",
+    finalizeConfirm: "Finalize? Discrepancies become pending adjustments for approval. Uncounted items are treated as missing.",
+    cancelCount: "Cancel count", scanHere: "Scan item barcode", uncounted: "Uncounted", discrepancies: "Discrepancies",
+    weighed: "Weighed (g)", open: "In progress", finalized: "Finalized", cancelled: "Cancelled",
+  },
+  pos: {
+    title: "New sale", scan: "Scan barcode or search item…", items: "Items", oldGold: "Old gold (exchange)",
+    addOldGold: "Add old gold", weight: "Weight (g)", deductionPct: "Weight loss %", deductionPerGram: "Deduction / g",
+    customer: "Customer", walkIn: "Walk-in customer", customerName: "Customer name", payments: "Payments",
+    addPayment: "Add payment", goldValue: "Gold value", making: "Making charge", stones: "Stones", subtotal: "Subtotal",
+    discount: "Discount", invoiceDiscount: "Invoice discount", vat: "VAT", grandTotal: "Total",
+    oldGoldCredit: "Old gold credit", netPayable: "Net payable", paid: "Paid", remaining: "On account",
+    shopPays: "Shop pays customer", payRest: "Pay remaining", post: "Post invoice", posted: "Invoice posted",
+    pricePerGram: "Price / g", notAvailable: "Item not available", fillRemaining: "Fill remaining amount",
+    confirmPost: "Post this invoice? It cannot be edited afterwards.", empty: "Scan an item to begin",
+    priceUsed: "Price used", override: "Override", refNo: "Reference no.",
+  },
+  sales: {
+    title: "Sales invoices", number: "Invoice no.", issuedAt: "Issued", items: "Items", status: {
+      posted: "Posted", partially_returned: "Partially returned", returned: "Returned",
+    },
+    returnItems: "Return items", returnQty: "Return qty", settlement: "Settlement", refund: "Refund money",
+    credit: "Credit customer account", returned: "Return recorded", cashier: "Cashier", invoice: "Tax invoice",
+    footerThanks: "Thank you for your visit", returnsList: "Returns on this invoice",
+    goldPriceRef: "Gold price reference #{{id}}",
+  },
+  pur: {
+    title: "Purchases", new: "New purchase", supplierInvoice: "Supplier invoice no.", existing: "Existing item",
+    newProduct: "New item", unitCost: "Unit cost", goldPrice: "Gold price / g", makingCost: "Making cost / g",
+    otherCost: "Other cost", lineTotal: "Line total", posted: "Purchase posted", vat: "VAT",
+    addLine: "Add line", returnToSupplier: "Return to supplier",
+  },
+  party: {
+    customers: "Customers", suppliers: "Suppliers", newCustomer: "New customer", newSupplier: "New supplier",
+    nationalId: "National ID", creditLimit: "Credit limit", ledger: "Account statement", receivePayment: "Receive payment",
+    paySupplier: "Pay supplier", taxNo: "Tax registration no.", hasBalance: "With balance only",
+  },
+  tr: {
+    title: "Treasury", accounts: "Accounts", transactions: "Transactions", transfer: "Transfer", newAccount: "New account",
+    kind: "Kind", cashBox: "Cash box", bankAccount: "Bank account", bankName: "Bank", accountNo: "Account no.",
+    isDefault: "Default", source: "From", destination: "To", movement: "Cash movement", opening: "Opening balance",
+    deposit: "Owner deposit", withdrawal: "Owner withdrawal",
+  },
+  exp: { title: "Expenses", new: "New expense", category: "Category", void: "Void", voided: "Voided", categories: "Expense categories" },
+  rep: {
+    title: "Reports", sales: "Sales report", byDay: "By day", byKarat: "By karat", byUser: "By cashier",
+    byMethod: "By payment method", revenue: "Revenue (ex VAT)", cogs: "Cost of goods", weightSold: "Weight sold",
+  },
+  users: { title: "Users", new: "New user", role: "Role", fullName: "Full name", lastLogin: "Last login", roles: {
+    owner: "Owner", manager: "Manager", accountant: "Accountant", cashier: "Cashier", inventory: "Inventory clerk",
+  } },
+  settings: {
+    title: "Settings", shop: "Shop information", tax: "Tax & calculation", vatRate: "VAT rate %",
+    vatOnMaking: "VAT on making charge", vatOnGold: "VAT on gold value", vatOnStones: "VAT on stones",
+    maxDiscount: "Max cashier discount %", staleHours: "Mark prices outdated after (hours)", taxNo: "Tax registration no.",
+    crNo: "Commercial registration no.", footerAr: "Invoice footer (Arabic)", footerEn: "Invoice footer (English)",
+    karats: "Karats", purity: "Purity", backups: "Backups", createBackup: "Create backup now", size: "Size",
+  },
+  audit: { title: "Audit log", action: "Action", entity: "Entity", ip: "IP" },
+  notif: {
+    title: "Notifications", empty: "All clear",
+    price_missing: "No price entered for {{karat}}K", price_stale: "{{karat}}K price is outdated",
+    adjustments_pending: "{{count}} adjustments awaiting approval", low_stock: "{{count}} items at or below reorder level",
+    stock_count_open: "A stock count is in progress",
+  },
+  tx: {
+    opening: "Opening balance", sale_receipt: "Sale receipt", sale_refund: "Sales refund", old_gold_payout: "Old gold paid out",
+    customer_payment: "Customer payment", purchase_payment: "Supplier payment", purchase_refund: "Supplier refund", expense: "Expense",
+    transfer: "Transfer", deposit: "Owner deposit", withdrawal: "Owner withdrawal", reversal: "Reversal",
+  },
+  scrapTypes: { received: "Received from customer", sent_to_refinery: "Sent to refinery", adjustment: "Adjustment" },
+  methods: { cash: "Cash", card: "Card", bank_transfer: "Bank transfer", instapay: "InstaPay", wallet: "Mobile wallet", cheque: "Cheque" },
+};
+
+export default en;
+export type Dict = typeof en;

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+node_modules/
+frontend/dist/
+desktop/web/
+desktop/release/
+backend/media/
+backend/backups/
+backend/staticfiles/

@@ -1,0 +1,11 @@
+Django>=5.2,<5.3
+djangorestframework>=3.16,<3.17
+djangorestframework-simplejwt>=5.5,<6
+django-cors-headers>=4.9,<5
+django-filter>=25,<27
+psycopg[binary]>=3.2,<4
+python-decouple>=3.8,<4
+celery>=5.5,<6
+redis>=5,<9
+gunicorn>=23
+Pillow>=11
