@@ -1,4 +1,8 @@
+from django.conf import settings
+from django.core.cache import cache
 from rest_framework import generics, status, viewsets
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,9 +15,36 @@ from .permissions import Cap
 from .serializers import ChangePasswordSerializer, LoginSerializer, MeSerializer, UserSerializer
 
 
+def _lock_key(username: str) -> str:
+    return f"login-fail:{(username or '').strip().lower()[:150]}"
+
+
 class LoginView(TokenObtainPairView):
+    """JWT login with per-username lockout and audit of every attempt."""
     serializer_class = LoginSerializer
     throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        username = str(request.data.get("username", ""))
+        key = _lock_key(username)
+        failures = cache.get(key, 0)
+        if failures >= settings.LOGIN_MAX_FAILURES:
+            audit(None, "auth.login_blocked", None, username, request=request, entity="auth")
+            return Response({"detail": f"Too many failed attempts. Try again in {settings.LOGIN_LOCKOUT_MINUTES} minutes.",
+                             "code": "locked"}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except (AuthenticationFailed, InvalidToken) as exc:
+            # Respond instead of raising so ATOMIC_REQUESTS does not roll back the audit row.
+            cache.set(key, failures + 1, settings.LOGIN_LOCKOUT_MINUTES * 60)
+            audit(None, "auth.login_failed", None, username, {"failures": failures + 1}, request=request,
+                  entity="auth")
+            return Response({"detail": str(exc.detail), "code": "invalid_credentials"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+        cache.delete(key)
+        user = User.objects.filter(username=username).first()
+        audit(user, "auth.login", user, username, request=request)
+        return response
 
 
 class MeView(generics.RetrieveUpdateAPIView):

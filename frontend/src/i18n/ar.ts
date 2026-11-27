@@ -23,7 +23,7 @@ const ar: Dict = {
   },
   auth: {
     title: "تسجيل الدخول", username: "اسم المستخدم", password: "كلمة المرور", submit: "دخول", logout: "تسجيل الخروج",
-    invalid: "اسم المستخدم أو كلمة المرور غير صحيحة", profile: "ملفي الشخصي", changePassword: "تغيير كلمة المرور",
+    invalid: "اسم المستخدم أو كلمة المرور غير صحيحة", locked: "محاولات فاشلة كثيرة. تم إيقاف الحساب مؤقتاً لمدة 15 دقيقة.", profile: "ملفي الشخصي", changePassword: "تغيير كلمة المرور",
     oldPassword: "كلمة المرور الحالية", newPassword: "كلمة المرور الجديدة", language: "اللغة",
   },
   errors: { network: "تعذر الاتصال بالخادم. تحقق من الشبكة.", generic: "حدث خطأ غير متوقع" },
@@ -138,6 +138,13 @@ const ar: Dict = {
     price_missing: "لم يتم إدخال سعر عيار {{karat}}", price_stale: "سعر عيار {{karat}} غير محدّث",
     adjustments_pending: "{{count}} تسوية بانتظار الاعتماد", low_stock: "{{count}} صنف وصل لحد إعادة الطلب",
     stock_count_open: "يوجد جرد قيد التنفيذ",
+  },
+  rep2: {
+    tabs: { sales: "المبيعات", close: "إقفال اليومية", inventory: "المخزون", balances: "الأرصدة" },
+    exportCsv: "تصدير Excel (CSV)", dailyClose: "إقفال اليومية", opening: "رصيد أول اليوم", inflow: "وارد", outflow: "منصرف",
+    closing: "رصيد آخر اليوم", expectedCash: "النقدية المتوقعة بالدرج", countedCash: "النقدية الفعلية", variance: "الفرق (عجز/زيادة)",
+    firstLast: "الفواتير", creditSales: "مبيعات آجلة", totalCost: "إجمالي التكلفة", valueAtBuy: "القيمة بسعر الشراء",
+    unitCost: "تكلفة الوحدة", totalWeight: "إجمالي الوزن",
   },
   tx: {
     opening: "رصيد افتتاحي", sale_receipt: "تحصيل مبيعات", sale_refund: "رد مبيعات", old_gold_payout: "صرف قيمة ذهب قديم",

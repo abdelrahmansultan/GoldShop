@@ -21,7 +21,7 @@ const en = {
   },
   auth: {
     title: "Sign in", username: "Username", password: "Password", submit: "Sign in", logout: "Sign out",
-    invalid: "Invalid username or password", profile: "My profile", changePassword: "Change password",
+    invalid: "Invalid username or password", locked: "Too many failed attempts. The account is locked for 15 minutes.", profile: "My profile", changePassword: "Change password",
     oldPassword: "Current password", newPassword: "New password", language: "Language",
   },
   errors: { network: "Cannot reach the server. Check the connection.", generic: "Something went wrong" },
@@ -138,6 +138,13 @@ const en = {
     price_missing: "No price entered for {{karat}}K", price_stale: "{{karat}}K price is outdated",
     adjustments_pending: "{{count}} adjustments awaiting approval", low_stock: "{{count}} items at or below reorder level",
     stock_count_open: "A stock count is in progress",
+  },
+  rep2: {
+    tabs: { sales: "Sales", close: "Daily close", inventory: "Inventory", balances: "Balances" },
+    exportCsv: "Export Excel (CSV)", dailyClose: "End-of-day close", opening: "Opening", inflow: "In", outflow: "Out",
+    closing: "Closing", expectedCash: "Expected cash in drawer", countedCash: "Counted cash", variance: "Variance",
+    firstLast: "Invoices", creditSales: "Credit sales", totalCost: "Total cost", valueAtBuy: "Value at buy price",
+    unitCost: "Unit cost", totalWeight: "Total weight",
   },
   tx: {
     opening: "Opening balance", sale_receipt: "Sale receipt", sale_refund: "Sales refund", old_gold_payout: "Old gold paid out",

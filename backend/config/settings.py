@@ -125,6 +125,14 @@ CORS_ALLOWED_ORIGINS = config(
 )
 CORS_ALLOW_ALL_ORIGINS = False
 
+# Shared cache (login lockout counters must be shared by all gunicorn workers).
+if config("USE_REDIS_CACHE", default=False, cast=bool):
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache",
+                          "LOCATION": config("REDIS_URL", default="redis://localhost:6379/0")}}
+
+LOGIN_MAX_FAILURES = config("LOGIN_MAX_FAILURES", default=5, cast=int)
+LOGIN_LOCKOUT_MINUTES = config("LOGIN_LOCKOUT_MINUTES", default=15, cast=int)
+
 CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE

@@ -80,3 +80,12 @@ export function errorMessage(e: unknown, fallback = "Error"): string {
 }
 
 export interface Page<T> { count: number; next: string | null; previous: string | null; results: T[] }
+
+/** Download a CSV export through the authenticated API (keeps the JWT out of URLs). */
+export async function downloadCsv(path: string, params: Record<string, unknown>, filename: string) {
+  const res = await api.get(path, { params: { ...params, export: "csv" }, responseType: "blob" });
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

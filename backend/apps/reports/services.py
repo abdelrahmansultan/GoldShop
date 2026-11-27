@@ -159,3 +159,76 @@ def sales_report(d1: date, d2: date) -> dict:
             "expenses": _sum(Expense.objects.filter(date__gte=d1, date__lte=d2, is_void=False), "amount"),
             "purchases": _sum(PurchaseInvoice.objects.filter(date__gte=d1, date__lte=d2), "total")}
 
+
+
+def daily_close(d: date) -> dict:
+    """End-of-day (Z) report: per-account opening, movements by type/method, closing.
+    The cashier compares 'expected_cash' with the physical count in the drawer."""
+    from apps.inventory.models import ScrapGoldMovement
+    from apps.treasury.models import MoneyAccount
+
+    start, end = day_bounds(d)
+    accounts = []
+    for acc in MoneyAccount.objects.order_by("kind", "name"):
+        tx = MoneyTransaction.objects.filter(account=acc)
+        opening = _sum(tx.filter(created_at__lt=start), "amount")
+        day = tx.filter(created_at__gte=start, created_at__lt=end)
+        by_type = list(day.values("type").annotate(total=Sum("amount"), count=Count("id")).order_by("type"))
+        by_method = list(day.exclude(method="").values("method").annotate(total=Sum("amount"), count=Count("id"))
+                         .order_by("method"))
+        net = _sum(day, "amount")
+        if opening == 0 and net == 0 and not acc.is_active:
+            continue
+        accounts.append({"id": acc.id, "name": acc.name, "kind": acc.kind, "opening": opening,
+                         "inflow": _sum(day.filter(amount__gt=0), "amount"),
+                         "outflow": _sum(day.filter(amount__lt=0), "amount"),
+                         "net": net, "closing": opening + net, "by_type": by_type, "by_method": by_method})
+    scrap = list(ScrapGoldMovement.objects.filter(created_at__gte=start, created_at__lt=end, type="received")
+                 .values("karat__code").annotate(weight=Sum("weight"), value=Sum("value")).order_by("karat__code"))
+    invoices = SalesInvoice.objects.filter(issued_at__gte=start, issued_at__lt=end)
+    return {
+        "date": d,
+        "sales": sales_summary(start, end),
+        "credit_sales": _sum(invoices.filter(credit_amount__gt=0), "credit_amount"),
+        "expenses": _sum(Expense.objects.filter(date=d, is_void=False), "amount"),
+        "purchases": _sum(PurchaseInvoice.objects.filter(date=d), "total"),
+        "accounts": accounts,
+        "expected_cash": sum((a["closing"] for a in accounts if a["kind"] == "cash"), ZERO),
+        "old_gold_received": scrap,
+        "first_invoice": invoices.order_by("issued_at").values_list("number", flat=True).first(),
+        "last_invoice": invoices.order_by("-issued_at").values_list("number", flat=True).first(),
+    }
+
+
+def inventory_rows(params: dict):
+    """In-stock items with weights, cost and value at today's buy price."""
+    from apps.pricing.models import GoldPrice, Karat
+
+    qs = (Product.objects.filter(status__in=IN_STOCK, quantity_on_hand__gt=0)
+          .select_related("karat", "category", "supplier").order_by("karat__sort_order", "category__sort_order", "code"))
+    if params.get("karat"):
+        qs = qs.filter(karat_id=params["karat"])
+    if params.get("category"):
+        qs = qs.filter(category_id=params["category"])
+    prices = {}
+    for k in Karat.objects.all():
+        gp = GoldPrice.objects.filter(karat=k, effective_at__lte=timezone.now()).first()
+        prices[k.pk] = gp.buy_price if gp else None
+    for p in qs:
+        total_w = p.net_weight * p.quantity_on_hand
+        price = prices.get(p.karat_id)
+        yield {
+            "id": p.id, "code": p.code, "name": p.name, "category_ar": p.category.name_ar,
+            "category_en": p.category.name_en, "karat": p.karat.code, "quantity": p.quantity_on_hand,
+            "gross_weight": p.gross_weight, "net_weight": p.net_weight, "total_net_weight": total_w,
+            "unit_cost": p.purchase_cost, "total_cost": p.purchase_cost * p.quantity_on_hand,
+            "value_at_buy": (total_w * price).quantize(Decimal("0.01")) if price is not None else None,
+            "supplier": p.supplier.name if p.supplier else "",
+        }
+
+
+def party_balances(kind: str):
+    model = Customer if kind == "customers" else Supplier
+    bal = Coalesce(Sum("ledger__amount"), Value(ZERO), output_field=DEC)
+    return list(model.objects.annotate(balance=bal).exclude(balance=0)
+                .values("id", "name", "phone", "balance").order_by("-balance"))

@@ -54,6 +54,10 @@ api = [
     path("payment-methods/", treasury.payment_methods),
     path("reports/dashboard/", reports.dashboard),
     path("reports/sales/", reports.sales_report),
+    path("reports/sales.csv", reports.sales_report_csv),
+    path("reports/daily-close/", reports.daily_close),
+    path("reports/inventory/", reports.inventory_report),
+    path("reports/balances/<str:kind>/", reports.balances),
     path("", include(r.urls)),
 ]
 
