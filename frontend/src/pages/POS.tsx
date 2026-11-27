@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Plus, ScanBarcode, Trash2, UserPlus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Plus, Trash2, UserPlus } from "lucide-react";
+import { ProductPicker } from "../components/ProductPicker";
 import { api, errorMessage } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useAction, useAll } from "../lib/hooks";
@@ -34,9 +35,7 @@ export default function POS() {
   const [walkIn, setWalkIn] = useState({ name: "", phone: "" });
   const [invDiscount, setInvDiscount] = useState("");
   const [notes, setNotes] = useState("");
-  const [scan, setScan] = useState("");
   const [confirm, setConfirm] = useState(false);
-  const scanRef = useRef<HTMLInputElement>(null);
 
   const body = useMemo(() => ({
     customer: customer?.id ?? null, customer_name: walkIn.name, customer_phone: walkIn.phone,
@@ -60,21 +59,31 @@ export default function POS() {
   const pv = lines.length ? preview.data : null;
   const pvError = preview.error ? errorMessage(preview.error) : null;
 
-  const addProduct = useMutation({
-    mutationFn: async (code: string) => (await api.get<Product>(`/products/barcode/${encodeURIComponent(code)}/`)).data,
-    onSuccess: (p) => {
-      if (p.status !== "available" || p.quantity_on_hand < 1) { toast.error(`${p.code}: ${t("pos.notAvailable")}`); return; }
-      setLines((ls) => {
-        const ex = ls.find((l) => l.product.id === p.id);
-        if (ex) {
-          if (p.tracking === "piece" || ex.quantity >= p.quantity_on_hand) { toast.error(`${p.code}: ${t("pos.notAvailable")}`); return ls; }
-          return ls.map((l) => (l.product.id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
-        }
-        return [...ls, { product: p, quantity: 1, discount: "" }];
-      });
-    },
-    onError: (e) => toast.error(errorMessage(e)),
-  });
+  /** Add one unit of a product to the invoice (respects stock and serialized pieces). */
+  const addToInvoice = (p: Product) => {
+    if (p.status !== "available" || p.quantity_on_hand < 1) { toast.error(`${p.code}: ${t("pos.notAvailable")}`); return; }
+    setLines((ls) => {
+      const ex = ls.find((l) => l.product.id === p.id);
+      if (ex) {
+        if (p.tracking === "piece" || ex.quantity >= p.quantity_on_hand) { toast.error(`${p.code}: ${t("pos.notAvailable")}`); return ls; }
+        return ls.map((l) => (l.product.id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
+      }
+      return [...ls, { product: p, quantity: 1, discount: "" }];
+    });
+  };
+
+  /** Scanner: exact barcode/code lookup. Returns false when no exact match (caller keeps it as search text). */
+  const scanCode = async (code: string) => {
+    try {
+      addToInvoice((await api.get<Product>(`/products/barcode/${encodeURIComponent(code)}/`)).data);
+      return true;
+    } catch (e) {
+      const status = (e as { response?: { status: number } }).response?.status;
+      if (status !== 404) toast.error(errorMessage(e));
+      return false;
+    }
+  };
+  const inCart = Object.fromEntries(lines.map((l) => [l.product.id, l.quantity]));
 
   const post = useAction(() => api.post("/sales/", body), {
     invalidate: [["/products/"], ["/reports/dashboard/"], ["/sales/"]], success: t("pos.posted"),
@@ -93,7 +102,6 @@ export default function POS() {
     } else setPays([{ key: Date.now(), method: "cash", account: "", amount: owed, reference_no: "" }]);
   };
 
-  const submitScan = (e: React.FormEvent) => { e.preventDefault(); if (scan.trim()) addProduct.mutate(scan.trim()); setScan(""); scanRef.current?.focus(); };
   const pvLine = (id: number) => pv?.lines.find((x: any) => x.product === id);
 
   const creditBlocked = remaining && !isZero(remaining) && !customer;
@@ -103,13 +111,7 @@ export default function POS() {
       <PageHeader title={t("pos.title")} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">
         <div className="space-y-4">
-          <Card>
-            <form onSubmit={submitScan} className="relative">
-              <ScanBarcode className="pointer-events-none absolute start-3 top-1/2 size-5 -translate-y-1/2 text-gold-500" />
-              <input ref={scanRef} autoFocus value={scan} onChange={(e) => setScan(e.target.value)} placeholder={t("pos.scan")}
-                className="input py-3 ps-11 text-base" />
-            </form>
-          </Card>
+          <ProductPicker onPick={addToInvoice} onScan={scanCode} inCart={inCart} />
 
           <Card title={t("pos.items")} bodyClass="p-0">
             {!lines.length ? <div className="p-10 text-center text-sm text-slate-400">{t("pos.empty")}</div> : (

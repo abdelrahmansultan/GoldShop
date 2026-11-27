@@ -1,5 +1,5 @@
 export interface Karat { id: number; code: string; name_ar: string; name_en: string; purity: string; is_active: boolean; sort_order: number }
-export interface GoldPrice { id: number; karat: number; karat_code: string; buy_price: string; sell_price: string; source: number; source_name: string; effective_at: string; entered_by_name: string | null; note: string; created_at: string }
+export interface GoldPrice { id: number; karat: number; karat_code: string; buy_price: string; sell_price: string; prev_buy?: string | null; prev_sell?: string | null; buy_change: string | null; sell_change: string | null; source: number; source_name: string; effective_at: string; entered_by_name: string | null; note: string; created_at: string }
 export interface Lookup { id: number; code: string; name_ar: string; name_en: string; is_active: boolean }
 export interface Product {
   id: number; code: string; barcode: string; name: string; name_en: string; category: number; category_name_ar: string; category_name_en: string;

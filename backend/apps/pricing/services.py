@@ -24,18 +24,34 @@ def current_price(karat: Karat, at=None) -> GoldPrice:
     return p
 
 
+def is_today(price: GoldPrice) -> bool:
+    return timezone.localdate(price.effective_at) == timezone.localdate()
+
+
+def price_for_sale(karat: Karat) -> GoldPrice:
+    """Current price, and when the shop requires daily pricing, it must be from today."""
+    p = current_price(karat)
+    if ShopSettings.load().require_daily_price and not is_today(p):
+        raise BusinessError(
+            f"Today's gold price for {karat.code}K has not been entered yet. A manager must enter today's prices "
+            "before selling.", code="price_not_today")
+    return p
+
+
 def price_board(at=None) -> list[dict]:
     """Latest price per active karat with staleness info. Missing prices are
     reported as missing — never filled in or derived silently."""
     at = at or timezone.now()
-    stale_after = timedelta(hours=ShopSettings.load().price_stale_after_hours)
+    cfg = ShopSettings.load()
+    stale_after = timedelta(hours=cfg.price_stale_after_hours)
     rows = []
     for k in Karat.objects.filter(is_active=True):
         p = GoldPrice.objects.filter(karat=k, effective_at__lte=at).select_related("source", "entered_by").first()
         rows.append({
             "karat": k,
             "price": p,
-            "is_stale": p is None or (at - p.effective_at) > stale_after,
+            "is_stale": p is None or (at - p.effective_at) > stale_after
+                        or (cfg.require_daily_price and timezone.localdate(p.effective_at) != timezone.localdate(at)),
         })
     return rows
 

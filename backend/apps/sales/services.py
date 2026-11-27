@@ -10,7 +10,7 @@ from apps.core.models import DocumentSequence, ShopSettings
 from apps.inventory.models import Product, ScrapGoldMovement, StockMovement
 from apps.inventory.services import IN_STOCK, move_stock
 from apps.parties.models import CustomerLedger
-from apps.pricing.services import current_price
+from apps.pricing.services import price_for_sale
 from apps.treasury.models import MoneyTransaction
 from apps.treasury.services import account_for, post
 from gold_engine import (
@@ -63,7 +63,7 @@ def price_sale(user, data: dict, *, for_update: bool = False) -> dict:
         if product.status not in IN_STOCK or product.quantity_on_hand < qty:
             raise BusinessError(f"{product.code} is not available in the requested quantity "
                                 f"(on hand: {product.quantity_on_hand}).", code="insufficient_stock")
-        gp = current_price(product.karat)
+        gp = price_for_sale(product.karat)
         price = gp.sell_price
         overridden = False
         if ln.get("price_per_gram") not in (None, ""):
@@ -119,7 +119,7 @@ def price_sale(user, data: dict, *, for_update: bool = False) -> dict:
 
     old = []
     for og in data.get("old_gold") or []:
-        gp = current_price(og["karat"])
+        gp = price_for_sale(og["karat"])
         r = calculate_old_gold(OldGoldInput(weight=og["weight"], buy_price_per_gram=gp.buy_price,
                                             deduction_per_gram=og.get("deduction_per_gram") or 0,
                                             deduction_percent=og.get("deduction_percent") or 0))

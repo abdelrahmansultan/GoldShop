@@ -37,8 +37,27 @@ CAPABILITIES: dict[str, set[str]] = {
 }
 
 
+# Screen grouping used by the permissions editor (order = display order).
+CAPABILITY_GROUPS: list[tuple[str, list[str]]] = [
+    ("dashboard", ["dashboard.financial"]),
+    ("sales", ["sales.create", "sales.view", "sales.return", "sales.discount_override", "parties.manage"]),
+    ("prices", ["prices.manage"]),
+    ("inventory", ["inventory.view", "inventory.manage", "inventory.view_cost", "inventory.adjust.request",
+                   "inventory.adjust.approve", "inventory.count"]),
+    ("purchases", ["purchases.manage"]),
+    ("finance", ["treasury.view", "treasury.manage", "reports.view"]),
+    ("admin", ["users.manage", "audit.view", "settings.manage", "backup.manage"]),
+]
+
+
+def role_defaults(role: str) -> list[str]:
+    return sorted(c for c, roles in CAPABILITIES.items() if role in roles)
+
+
 class User(AbstractUser):
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CASHIER)
+    # None = use the role's default screens; a list = exactly these capabilities.
+    custom_capabilities = models.JSONField(null=True, blank=True)
     full_name = models.CharField(max_length=150, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     language = models.CharField(max_length=2, choices=[("ar", "Arabic"), ("en", "English")], default="ar")
@@ -46,8 +65,10 @@ class User(AbstractUser):
     def has_cap(self, cap: str) -> bool:
         if not self.is_active:
             return False
-        if self.is_superuser:
+        if self.is_superuser or self.role == Role.OWNER:
             return True
+        if self.custom_capabilities is not None:
+            return cap in self.custom_capabilities
         return self.role in CAPABILITIES.get(cap, set())
 
     @property

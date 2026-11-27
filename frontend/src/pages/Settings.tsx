@@ -36,6 +36,7 @@ export default function Settings() {
               <Checkbox label={t("settings.vatOnMaking")} checked={s.vat_on_making_charge} onChange={(e) => setS({ ...s, vat_on_making_charge: e.target.checked })} />
               <Checkbox label={t("settings.vatOnGold")} checked={s.vat_on_gold} onChange={(e) => setS({ ...s, vat_on_gold: e.target.checked })} />
               <Checkbox label={t("settings.vatOnStones")} checked={s.vat_on_stones} onChange={(e) => setS({ ...s, vat_on_stones: e.target.checked })} />
+              <Checkbox label={t("settings.requireDaily")} checked={s.require_daily_price} onChange={(e) => setS({ ...s, require_daily_price: e.target.checked })} />
             </div>
           </div>
         </Card>

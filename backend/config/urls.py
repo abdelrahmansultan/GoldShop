@@ -20,7 +20,7 @@ r = DefaultRouter()
 r.register("users", acc.UserViewSet)
 r.register("karats", pricing.KaratViewSet)
 r.register("price-sources", pricing.PriceSourceViewSet)
-r.register("prices", pricing.GoldPriceViewSet)
+r.register("prices", pricing.GoldPriceViewSet, basename="goldprice")
 r.register("categories", inv.CategoryViewSet)
 r.register("jewelry-types", inv.JewelryTypeViewSet)
 r.register("products", inv.ProductViewSet)
@@ -45,6 +45,7 @@ api = [
     path("auth/logout/", TokenBlacklistView.as_view()),
     path("auth/me/", acc.MeView.as_view()),
     path("auth/change-password/", acc.change_password),
+    path("auth/capabilities/", acc.capability_catalog),
     path("health/", core.health),
     path("settings/", core.shop_settings),
     path("search/", core.search),

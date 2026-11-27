@@ -23,11 +23,26 @@ class GoldPriceSerializer(serializers.ModelSerializer):
     karat_code = serializers.CharField(source="karat.code", read_only=True)
     source_name = serializers.CharField(source="source.name", read_only=True)
     entered_by_name = serializers.CharField(source="entered_by.display_name", read_only=True, default=None)
+    prev_buy = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=None)
+    prev_sell = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=None)
+    buy_change = serializers.SerializerMethodField()
+    sell_change = serializers.SerializerMethodField()
 
     class Meta:
         model = GoldPrice
-        fields = ["id", "karat", "karat_code", "buy_price", "sell_price", "source", "source_name", "effective_at",
-                  "entered_by", "entered_by_name", "note", "created_at"]
+        fields = ["id", "karat", "karat_code", "buy_price", "sell_price", "prev_buy", "prev_sell", "buy_change",
+                  "sell_change", "source", "source_name", "effective_at", "entered_by", "entered_by_name", "note",
+                  "created_at"]
+
+    @staticmethod
+    def _diff(new, old):
+        return None if old is None else str(new - old)
+
+    def get_buy_change(self, o):
+        return self._diff(o.buy_price, getattr(o, "prev_buy", None))
+
+    def get_sell_change(self, o):
+        return self._diff(o.sell_price, getattr(o, "prev_sell", None))
 
 
 class PriceEntrySerializer(serializers.Serializer):

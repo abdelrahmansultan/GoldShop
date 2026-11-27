@@ -105,6 +105,8 @@ class ShopSettings(models.Model):
     default_making_charge_per_gram = models.DecimalField(**PRICE, default=Decimal("0.00"))
     max_discount_percent_cashier = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("5.00"))
     price_stale_after_hours = models.PositiveIntegerField(default=24)
+    require_daily_price = models.BooleanField(
+        default=True, help_text="Block sales until today's gold prices are entered (Cairo date)")
     invoice_footer_ar = models.CharField(max_length=500, blank=True)
     invoice_footer_en = models.CharField(max_length=500, blank=True)
     logo = models.ImageField(upload_to="shop/", null=True, blank=True)

@@ -10,6 +10,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ProfileModal } from "./ProfileModal";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { DailyPriceBanner } from "./DailyPriceBanner";
 
 type NavItem = { to: string; key: string; icon: React.ElementType; cap: string };
 const NAV: { group: string; items: NavItem[] }[] = [
@@ -88,6 +89,7 @@ export default function Layout() {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={() => setOpen(true)} />
+        <DailyPriceBanner />
         <main className="flex-1 px-4 py-5 sm:px-6"><ErrorBoundary key={loc.pathname}><Outlet /></ErrorBoundary></main>
       </div>
     </div>

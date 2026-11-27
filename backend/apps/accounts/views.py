@@ -67,6 +67,15 @@ def change_password(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def capability_catalog(request):
+    """Screens/permissions for the users screen, with each role's defaults."""
+    from .models import CAPABILITY_GROUPS, Role, role_defaults
+    return Response({"groups": [{"key": k, "capabilities": caps} for k, caps in CAPABILITY_GROUPS],
+                     "roles": {r.value: role_defaults(r.value) for r in Role}})
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.order_by("username")
     serializer_class = UserSerializer
@@ -76,7 +85,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, s):
         u = s.save()
-        audit(self.request.user, "user.created", u, f"{u.username} ({u.role})", request=self.request)
+        audit(self.request.user, "user.created", u, f"{u.username} ({u.role})",
+              {"custom_capabilities": u.custom_capabilities}, request=self.request)
 
     def perform_update(self, s):
         u = s.save()

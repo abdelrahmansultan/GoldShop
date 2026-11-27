@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CheckCircle2, Info, Plus } from "lucide-react";
-import { api } from "../lib/api";
+import { AlertTriangle, CheckCircle2, Download, Info, Plus } from "lucide-react";
+import { api, downloadCsv } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useAction, useAll, useGet, useList } from "../lib/hooks";
-import { dateTime, money } from "../lib/format";
+import { dateTime, isZero, money } from "../lib/format";
 import type { GoldPrice, Karat } from "../lib/types";
 import { useLocalName } from "../lib/useLookups";
 import { Badge, Button, Card, Field, Input, Modal, PageHeader, Pagination, Select, Spinner, Table } from "../components/ui";
@@ -44,28 +45,44 @@ export function PriceBoard({ compact, onEnter }: { compact?: boolean; onEnter?()
 export default function Prices() {
   const { t } = useTranslation();
   const { can } = useAuth();
+  const [sp, setSp] = useSearchParams();
   const [open, setOpen] = useState(false);
-  const [karat, setKarat] = useState("");
+  const [f, setF] = useState({ karat: "", entered_by: "", effective_at__date__gte: "", effective_at__date__lte: "" });
   const [page, setPage] = useState(1);
   const karats = useAll<Karat>("/karats/").data ?? [];
-  const history = useList<GoldPrice>("/prices/", { page, karat: karat || undefined });
+  const params = Object.fromEntries(Object.entries(f).filter(([, v]) => v));
+  const history = useList<GoldPrice>("/prices/", { page, ...params });
+  const editors = useGet<{ id: number; name: string }[]>("/prices/editors/").data ?? [];
   const sources = useAll<any>("/price-sources/").data ?? [];
+  const manager = can("prices.manage");
+  useEffect(() => { if (sp.get("enter") && manager) { setOpen(true); setSp({}, { replace: true }); } }, [sp, setSp, manager]);
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { setF({ ...f, [k]: e.target.value }); setPage(1); };
+  const change = (v: string | null) => v == null ? <span className="text-xs text-slate-400">{t("prices2.firstPrice")}</span>
+    : <span className={`num text-xs font-semibold ${v.startsWith("-") ? "text-red-600" : isZero(v) ? "text-slate-400" : "text-emerald-700"}`}>{v.startsWith("-") || isZero(v) ? "" : "+"}{money(v, { currency: false })}</span>;
   return (
     <div className="space-y-5">
       <PageHeader title={t("prices.title")} subtitle={t("prices.perGram")} />
-      <div className="flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"><Info className="mt-0.5 size-4 shrink-0" />{t("prices.warnNoInvent")}</div>
-      <PriceBoard onEnter={can("prices.manage") ? () => setOpen(true) : undefined} />
-      <Card title={t("prices.history")} bodyClass="p-0" actions={
-        <Select value={karat} onChange={(e) => { setKarat(e.target.value); setPage(1); }} className="w-36">
-          <option value="">{t("common.all")}</option>{karats.map((k) => <option key={k.id} value={k.id}>{k.code}K</option>)}
-        </Select>}>
-        <Table head={[t("prices.effectiveAt"), t("prices.karat"), t("prices.buy"), t("prices.sell"), t("prices.source"), t("prices.enteredBy"), t("prices.note")]}
+      <div className="flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"><Info className="mt-0.5 size-4 shrink-0" />
+        <span>{t("prices.warnNoInvent")} {!manager && <b>{t("prices2.managerOnly")}</b>}</span></div>
+      <PriceBoard onEnter={manager ? () => setOpen(true) : undefined} />
+      <Card title={t("prices2.log")} bodyClass="p-0" actions={
+        <Button size="sm" variant="secondary" icon={<Download className="size-3" />} onClick={() => void downloadCsv("/prices/", params, "gold-price-log.csv")}>{t("rep2.exportCsv")}</Button>}>
+        <div className="grid grid-cols-2 gap-3 border-b border-slate-100 p-4 md:grid-cols-4">
+          <Select value={f.karat} onChange={set("karat")}><option value="">{t("prices.karat")}: {t("common.all")}</option>{karats.map((k) => <option key={k.id} value={k.id}>{k.code}K</option>)}</Select>
+          <Select value={f.entered_by} onChange={set("entered_by")}><option value="">{t("prices.enteredBy")}: {t("prices2.allUsers")}</option>{editors.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select>
+          <Input type="date" value={f.effective_at__date__gte} onChange={set("effective_at__date__gte")} aria-label={t("common.from")} />
+          <Input type="date" value={f.effective_at__date__lte} onChange={set("effective_at__date__lte")} aria-label={t("common.to")} />
+        </div>
+        <Table head={[t("prices.effectiveAt"), t("prices.karat"), t("prices.buy"), t("prices2.change"), t("prices.sell"), t("prices2.change"), t("prices.enteredBy"), t("prices.source"), t("prices.note")]}
           empty={history.data?.results.length === 0}>
           {history.data?.results.map((p) => (
             <tr key={p.id}>
               <td className="text-xs">{dateTime(p.effective_at)}</td><td className="font-bold">{p.karat_code}K</td>
-              <td className="num">{money(p.buy_price)}</td><td className="num font-semibold">{money(p.sell_price)}</td>
-              <td>{p.source_name}</td><td>{p.entered_by_name ?? "—"}</td><td className="text-xs text-slate-500">{p.note}</td>
+              <td className="num">{money(p.buy_price, { currency: false })}{p.prev_buy && <div className="text-[11px] text-slate-400">{t("prices2.previous")}: {money(p.prev_buy, { currency: false })}</div>}</td>
+              <td>{change(p.buy_change)}</td>
+              <td className="num font-semibold">{money(p.sell_price, { currency: false })}{p.prev_sell && <div className="text-[11px] font-normal text-slate-400">{t("prices2.previous")}: {money(p.prev_sell, { currency: false })}</div>}</td>
+              <td>{change(p.sell_change)}</td>
+              <td className="font-medium">{p.entered_by_name ?? "—"}</td><td className="text-xs">{p.source_name}</td><td className="text-xs text-slate-500">{p.note}</td>
             </tr>
           ))}
         </Table>
@@ -103,7 +120,7 @@ function EnterPrices({ open, onClose, karats }: { open: boolean; onClose(): void
     const entries = karats.filter((k) => rows[k.id]?.buy && rows[k.id]?.sell)
       .map((k) => ({ karat: k.id, buy_price: rows[k.id].buy, sell_price: rows[k.id].sell }));
     return api.post("/prices/record/", { entries, note });
-  }, { invalidate: [["/price-board/"], ["/prices/"], ["/reports/dashboard/"]], success: t("prices.saved"), onSuccess: onClose });
+  }, { invalidate: [["/price-board/"], ["/prices/"], ["/prices/editors/"], ["/reports/dashboard/"], ["/notifications/"]], success: t("prices.saved"), onSuccess: onClose });
   return (
     <Modal open={open} onClose={onClose} title={t("prices.enter")}
       footer={<><Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button><Button variant="gold" disabled={invalid} loading={save.isPending} onClick={() => save.mutate(undefined)}>{t("common.save")}</Button></>}>
