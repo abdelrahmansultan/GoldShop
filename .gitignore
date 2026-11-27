@@ -11,3 +11,5 @@ backend/media/
 backend/backups/
 backend/staticfiles/
 *.tsbuildinfo
+*.bundle
+*-source.zip
