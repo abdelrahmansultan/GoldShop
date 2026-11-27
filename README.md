@@ -1,5 +1,9 @@
 # Gold Shop ERP — نظام إدارة محل الذهب
 
+[![CI](https://github.com/abdelrahmansultan/GoldShop/actions/workflows/ci.yml/badge.svg)](https://github.com/abdelrahmansultan/GoldShop/actions/workflows/ci.yml)
+
+> **دليل التشغيل والنشر بالعربي: [DEPLOY.md](DEPLOY.md)**
+
 A management system for a single gold and jewelry shop in Egypt. It covers gold prices, inventory, sales (POS) with old-gold exchange, purchases, customers and suppliers, treasury, expenses, reports and audit. One Django API serves both the **web app** and the **Windows desktop app**. The interface is in Arabic (RTL) and English (LTR). All amounts are in Egyptian Pounds (EGP).
 
 ```
@@ -62,11 +66,25 @@ docker compose up -d --build
 
 ## Windows desktop app
 
-Build this on Windows (or Linux with Wine) using Node 22:
+The easiest way: on GitHub open **Actions → Windows desktop installer → Run workflow**, then download the `.exe` from the run's artifacts. Pushing a `v*` tag also attaches it to a Release. To build locally on Windows (or Linux with Wine) using Node 22:
 ```bash
 cd desktop && npm install && npm run dist:win
 ```
 The installer is written to `desktop/release/`. The desktop app uses `http://localhost:8000` by default. For a shared server, go to **File → Server address… → Edit config file** and set `"apiUrl": "http://192.168.1.10:8000"`. Invoices print through the native Windows print dialog (`window.goldshop.print`). Fonts are bundled, so the app works without internet.
+
+## Internet deployment with HTTPS
+
+Set `DOMAIN` in `.env`, point the domain's DNS at the server, then:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+```
+Caddy obtains and renews the Let's Encrypt certificate automatically. Full step-by-step instructions are in [DEPLOY.md](DEPLOY.md).
+
+## Reports
+Sales (by day, karat, cashier, payment method) · **daily close** (expected drawer cash vs. counted, with the variance) · inventory valuation at today's buy price · customer/supplier balances. Every table exports to Excel-compatible CSV.
+
+## Security
+JWT sessions (30-minute access tokens, rotated refresh tokens) · per-username lockout after 5 failed logins for 15 minutes · every login, failure and block is audited · role capabilities enforced on the server · the production container refuses to start with a weak `DJANGO_SECRET_KEY`.
 
 ## Backup and restore
 
@@ -86,7 +104,7 @@ cd backend && ../.venv/bin/python -m pytest
 ```bash
 cd frontend && npx tsc -b && npm run build
 ```
-There are 36 backend tests. They cover the calculation engine (exact expected values), historical price snapshots, immutability (including raw SQL), stock locking, adjustments and segregation of duties, stock counts, returns, exchange payouts, credit limits, discount limits, purchases, expenses, permissions and dashboard figures.
+There are 40 backend tests, and GitHub Actions runs them on every push (`.github/workflows/ci.yml`), along with the frontend build and both Docker image builds. They cover the calculation engine (exact expected values), historical price snapshots, immutability (including raw SQL), stock locking, adjustments and segregation of duties, stock counts, returns, exchange payouts, credit limits, discount limits, purchases, expenses, permissions and dashboard figures.
 
 ---
 

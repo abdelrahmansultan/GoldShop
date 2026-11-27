@@ -1,0 +1,24 @@
+# Internet deployment with a domain name and automatic HTTPS.
+# docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+services:
+  web:
+    ports: !reset []          # only Caddy is exposed
+
+  backend:
+    ports: !reset []          # desktop clients use https://DOMAIN (nginx proxies /api)
+    environment:
+      BEHIND_HTTPS_PROXY: "1"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+
+volumes: { caddy_data: {}, caddy_config: {} }

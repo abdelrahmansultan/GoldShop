@@ -1,0 +1,11 @@
+# Automatic HTTPS (Let's Encrypt) in front of the web container.
+# DOMAIN comes from .env, e.g. DOMAIN=erp.mygoldshop.com
+{$DOMAIN} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+	}
+	reverse_proxy web:80
+}

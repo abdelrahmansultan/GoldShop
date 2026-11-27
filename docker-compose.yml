@@ -5,6 +5,7 @@ x-backend-env: &backend-env
   REDIS_URL: redis://redis:6379/0
   MEDIA_ROOT: /data/media
   BACKUP_DIR: /data/backups
+  USE_REDIS_CACHE: "1"
 
 services:
   db:
