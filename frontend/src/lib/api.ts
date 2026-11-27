@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 declare global {
   interface Window {
-    goldshop?: { apiUrl?: string; print?: (opts?: { silent?: boolean }) => Promise<void>; platform?: string };
+    goldshop?: { apiUrl?: string; mode?: string; print?: (opts?: { silent?: boolean }) => Promise<void>; platform?: string };
   }
 }
 

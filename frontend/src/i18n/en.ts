@@ -22,7 +22,7 @@ const en = {
   auth: {
     title: "Sign in", username: "Username", password: "Password", submit: "Sign in", logout: "Sign out",
     invalid: "Invalid username or password", locked: "Too many failed attempts. The account is locked for 15 minutes.", profile: "My profile", changePassword: "Change password",
-    oldPassword: "Current password", newPassword: "New password", language: "Language",
+    demoTitle: "Demo version — sample data for testing", demoHint: "Password for all accounts:", oldPassword: "Current password", newPassword: "New password", language: "Language",
   },
   errors: { network: "Cannot reach the server. Check the connection.", generic: "Something went wrong" },
   dash: {

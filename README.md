@@ -66,6 +66,8 @@ docker compose up -d --build
 
 ## Windows desktop app
 
+**All-in-one mode (default):** the installer bundles an embedded Python with the Django API and a portable PostgreSQL. On launch, `backend/standalone.py` creates a private database cluster in `%APPDATA%\Gold Shop ERP\data` (on first run), applies migrations, loads demo data into a brand-new database, takes a daily backup and serves the API on `127.0.0.1`. If the default ports are busy, it picks free ones. PostgreSQL is stopped cleanly when the app quits. **Client mode:** File → Server… → Network server connects the app to a shop server instead.
+
 The easiest way: on GitHub open **Actions → Windows desktop installer → Run workflow**, then download the `.exe` from the run's artifacts. Pushing a `v*` tag also attaches it to a Release. To build locally on Windows (or Linux with Wine) using Node 22:
 ```bash
 cd desktop && npm install && npm run dist:win

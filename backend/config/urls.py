@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_static
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 
@@ -64,3 +65,5 @@ api = [
 urlpatterns = [path("admin/", admin.site.urls), path("api/v1/", include(api))]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif settings.SERVE_MEDIA:  # standalone desktop mode: no nginx in front
+    urlpatterns += [re_path(r"^media/(?P<path>.*)$", serve_static, {"document_root": settings.MEDIA_ROOT})]

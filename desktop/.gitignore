@@ -1,1 +1,4 @@
-web/\nrelease/\nnode_modules/
+web/
+release/
+node_modules/
+server/

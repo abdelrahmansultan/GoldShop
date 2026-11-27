@@ -1,5 +1,8 @@
 name: Windows desktop installer
 
+# All-in-one installer: Electron UI + embedded Python/Django API + portable
+# PostgreSQL. Works on a single PC with no Docker, and can also connect to a
+# shop server instead (File → Server…).
 # Run manually from the Actions tab, or push a tag like v1.0.0 to also attach
 # the installer to a GitHub Release.
 on:
@@ -13,10 +16,72 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      SERVER: ${{ github.workspace }}\desktop\server
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Embedded Python
+        shell: pwsh
+        run: |
+          $v = python -c "import platform; print(platform.python_version())"
+          $tag = python -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')"
+          Invoke-WebRequest "https://www.python.org/ftp/python/$v/python-$v-embed-amd64.zip" -OutFile py.zip
+          Expand-Archive py.zip -DestinationPath "$env:SERVER\python"
+          # import paths for the embedded interpreter: stdlib zip, packages, and the Django app
+          Set-Content "$env:SERVER\python\python$tag._pth" "python$tag.zip`r`n.`r`nLib\site-packages`r`n..\app`r`nimport site"
+          python -m pip install --prefer-binary --target "$env:SERVER\python\Lib\site-packages" -r backend\requirements.txt
+
+      - name: Django app
+        shell: pwsh
+        run: |
+          robocopy backend "$env:SERVER\app" /E /XD tests __pycache__ media backups staticfiles .pytest_cache /XF pytest.ini requirements-dev.txt Dockerfile entrypoint.sh
+          if ($LASTEXITCODE -ge 8) { exit $LASTEXITCODE } else { exit 0 }
+
+      - name: Portable PostgreSQL
+        shell: pwsh
+        run: |
+          Write-Host "Runner PostgreSQL: $env:PGROOT"
+          & "$env:PGBIN\postgres.exe" --version
+          New-Item -ItemType Directory -Force "$env:SERVER\pgsql\lib" | Out-Null
+          Copy-Item "$env:PGROOT\bin" "$env:SERVER\pgsql\bin" -Recurse
+          Copy-Item "$env:PGROOT\share" "$env:SERVER\pgsql\share" -Recurse
+          Copy-Item "$env:PGROOT\lib\*.dll" "$env:SERVER\pgsql\lib\"
+          # Visual C++ runtime, in case the target PC lacks the redistributable
+          Get-ChildItem "$env:SERVER\python" -Filter "vcruntime*.dll" | ForEach-Object {
+            if (-not (Test-Path "$env:SERVER\pgsql\bin\$($_.Name)")) { Copy-Item $_.FullName "$env:SERVER\pgsql\bin\" } }
+          "{0:N0} MB bundled server" -f ((Get-ChildItem $env:SERVER -Recurse | Measure-Object Length -Sum).Sum / 1MB)
+
+      - name: Smoke test the bundled server on Windows
+        shell: pwsh
+        run: |
+          $env:GOLDSHOP_DATA = "$env:RUNNER_TEMP\gsdata"
+          $env:GOLDSHOP_PGBIN = "$env:SERVER\pgsql\bin"
+          $env:GOLDSHOP_DEMO = "1"
+          $p = Start-Process "$env:SERVER\python\python.exe" -ArgumentList "$env:SERVER\app\standalone.py" `
+                 -RedirectStandardOutput "$env:RUNNER_TEMP\sa.out" -RedirectStandardError "$env:RUNNER_TEMP\sa.err" -PassThru -NoNewWindow
+          $url = $null
+          for ($i = 0; $i -lt 180 -and -not $url; $i++) {
+            Start-Sleep 2
+            $m = Select-String -Path "$env:RUNNER_TEMP\sa.out" -Pattern "READY (http://127\.0\.0\.1:\d+)" -ErrorAction SilentlyContinue
+            if ($m) { $url = $m.Matches[0].Groups[1].Value }
+            if ($p.HasExited) { break }
+          }
+          Get-Content "$env:RUNNER_TEMP\sa.out"; Get-Content "$env:RUNNER_TEMP\sa.err" -Tail 40
+          if (-not $url) { throw "bundled server did not start" }
+          Invoke-RestMethod "$url/api/v1/health/"
+          $login = Invoke-RestMethod "$url/api/v1/auth/login/" -Method Post -ContentType "application/json" -Body '{"username":"cashier","password":"Gold@2026"}'
+          if (-not $login.access) { throw "login failed" }
+          $dash = Invoke-RestMethod "$url/api/v1/sales/" -Headers @{ Authorization = "Bearer $($login.access)" }
+          Write-Host "Demo invoices: $($dash.count)"
+          if ($dash.count -lt 3) { throw "demo data missing" }
+          Stop-Process $p.Id -Force
+          & "$env:GOLDSHOP_PGBIN\pg_ctl.exe" stop -D "$env:GOLDSHOP_DATA\pgdata" -m fast -w
+
       - name: Install frontend
         run: npm ci
         working-directory: frontend

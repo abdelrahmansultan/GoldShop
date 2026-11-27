@@ -1,10 +1,13 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-const arg = process.argv.find((a) => a.startsWith("--goldshop-api="));
-const apiUrl = arg ? arg.split("=").slice(1).join("=") : "http://localhost:8000";
+const arg = (name, fallback) => {
+  const a = process.argv.find((x) => x.startsWith(`--goldshop-${name}=`));
+  return a ? a.split("=").slice(1).join("=") : fallback;
+};
 
 contextBridge.exposeInMainWorld("goldshop", {
-  apiUrl,
+  apiUrl: arg("api", "http://localhost:8000"),
+  mode: arg("mode", "remote"), // "standalone" | "standalone-demo" | "remote"
   platform: process.platform,
   print: (opts) => ipcRenderer.invoke("goldshop:print", opts || {}),
 });

@@ -37,6 +37,18 @@ export default function Login() {
           {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
           <Button type="submit" variant="gold" size="lg" className="w-full" loading={busy}>{t("auth.submit")}</Button>
         </div>
+        {window.goldshop?.mode === "standalone-demo" && (
+          <div className="mt-5 rounded-lg border border-gold-200 bg-gold-50 p-3 text-xs text-slate-700">
+            <div className="mb-2 font-bold text-gold-600">{t("auth.demoTitle")}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {["owner", "manager", "cashier", "stock", "accountant"].map((n) => (
+                <button key={n} type="button" onClick={() => { setU(n); setP("Gold@2026"); }}
+                  className="rounded-md bg-white px-2 py-1 font-mono ring-1 ring-gold-200 hover:bg-gold-100">{n}</button>
+              ))}
+            </div>
+            <div className="mt-2">{t("auth.demoHint")} <span className="font-mono font-bold">Gold@2026</span></div>
+          </div>
+        )}
       </form>
     </div>
   );

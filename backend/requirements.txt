@@ -9,3 +9,4 @@ celery>=5.5,<6
 redis>=5,<9
 gunicorn>=23
 Pillow>=11
+waitress>=3

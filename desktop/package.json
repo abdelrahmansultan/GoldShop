@@ -2,7 +2,7 @@
   "name": "goldshop-desktop",
   "productName": "Gold Shop ERP",
   "version": "1.0.0",
-  "description": "Gold & Jewelry Shop ERP — Windows desktop client",
+  "description": "Gold & Jewelry Shop ERP — all-in-one Windows app (built-in server) or client for a shop server",
   "main": "main.cjs",
   "private": true,
   "scripts": {
@@ -30,8 +30,18 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
-      "shortcutName": "Gold Shop ERP"
-    }
+      "shortcutName": "Gold Shop ERP",
+      "deleteAppDataOnUninstall": false
+    },
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^38.8.6",

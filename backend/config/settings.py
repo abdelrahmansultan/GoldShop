@@ -92,6 +92,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = Path(config("MEDIA_ROOT", default=str(BASE_DIR / "media")))
+SERVE_MEDIA = config("SERVE_MEDIA", default=False, cast=bool)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -123,6 +124,10 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS", default="http://localhost:5173,http://127.0.0.1:5173", cast=Csv()
 )
+# The Windows desktop app loads its UI from file://, which browsers send as "Origin: null".
+# Allowing it is safe here because the API authenticates with bearer tokens, not cookies.
+if "null" not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = [*CORS_ALLOWED_ORIGINS, "null"]
 CORS_ALLOW_ALL_ORIGINS = False
 
 # Shared cache (login lockout counters must be shared by all gunicorn workers).
