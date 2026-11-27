@@ -82,7 +82,7 @@ def load_secrets() -> dict:
 
 def ensure_postgres(db_password: str):
     if not (PGDATA / "PG_VERSION").exists():
-        log("Creating database cluster (first run)…")
+        log("Creating database cluster (first run)...")
         pwfile = DATA / ".pw.tmp"
         pwfile.write_text(db_password, "utf-8")
         try:
@@ -96,11 +96,16 @@ def ensure_postgres(db_password: str):
     pg_port = running_pg_port()
     if pg_port is None:
         pg_port = pick_port(PG_PORT)
-        log(f"Starting PostgreSQL on port {pg_port}…")
-        r = run(PGBIN / f"pg_ctl{EXE}", "start", "-D", PGDATA, "-l", DATA / "postgres.log", "-o", f"-p {pg_port}",
-                "-w", "-t", "90", check=False)
-        if r.returncode != 0:
-            raise SystemExit(f"PostgreSQL failed to start:\n{r.stdout}\n{r.stderr}\nSee {DATA / 'postgres.log'}")
+        log(f"Starting PostgreSQL on port {pg_port}...")
+        # Do NOT capture output here: on Windows the postgres server inherits pg_ctl's pipe handles,
+        # so reading them would block forever. Server output goes to postgres.log instead.
+        rc = subprocess.run([str(PGBIN / f"pg_ctl{EXE}"), "start", "-D", str(PGDATA), "-l", str(DATA / "postgres.log"),
+                             "-o", f"-p {pg_port}", "-w", "-t", "90"], stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=NO_WINDOW).returncode
+        if rc != 0:
+            tail = (DATA / "postgres.log").read_text("utf-8", errors="replace")[-3000:] \
+                if (DATA / "postgres.log").exists() else ""
+            raise SystemExit(f"PostgreSQL failed to start (pg_ctl exit {rc}). Log:\n{tail}")
     import psycopg
     for _ in range(30):
         try:
@@ -135,13 +140,13 @@ def prepare_database():
     from django.core.management import call_command
 
     django.setup()
-    log("Applying database updates…")
+    log("Applying database updates...")
     call_command("migrate", interactive=False, verbosity=0)
     from apps.accounts.models import User
     fresh = not User.objects.exists()
     call_command("seed_initial", verbosity=0)
     if fresh and os.environ.get("GOLDSHOP_DEMO") == "1":
-        log("Loading demo data…")
+        log("Loading demo data...")
         call_command("seed_demo", verbosity=0)
         (DATA / "DEMO_DATA").write_text("This database contains demo data for testing.\n", "utf-8")
 

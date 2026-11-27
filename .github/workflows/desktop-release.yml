@@ -62,17 +62,21 @@ jobs:
           $env:GOLDSHOP_DATA = "$env:RUNNER_TEMP\gsdata"
           $env:GOLDSHOP_PGBIN = "$env:SERVER\pgsql\bin"
           $env:GOLDSHOP_DEMO = "1"
+          $env:PYTHONUTF8 = "1"
           $p = Start-Process "$env:SERVER\python\python.exe" -ArgumentList "$env:SERVER\app\standalone.py" `
                  -RedirectStandardOutput "$env:RUNNER_TEMP\sa.out" -RedirectStandardError "$env:RUNNER_TEMP\sa.err" -PassThru -NoNewWindow
           $url = $null
-          for ($i = 0; $i -lt 180 -and -not $url; $i++) {
+          for ($i = 0; $i -lt 120 -and -not $url; $i++) {
             Start-Sleep 2
             $m = Select-String -Path "$env:RUNNER_TEMP\sa.out" -Pattern "READY (http://127\.0\.0\.1:\d+)" -ErrorAction SilentlyContinue
             if ($m) { $url = $m.Matches[0].Groups[1].Value }
             if ($p.HasExited) { break }
           }
           Get-Content "$env:RUNNER_TEMP\sa.out"; Get-Content "$env:RUNNER_TEMP\sa.err" -Tail 40
-          if (-not $url) { throw "bundled server did not start" }
+          if (-not $url) {
+            if (Test-Path "$env:GOLDSHOP_DATA\postgres.log") { Get-Content "$env:GOLDSHOP_DATA\postgres.log" -Tail 40 }
+            throw "bundled server did not start"
+          }
           Invoke-RestMethod "$url/api/v1/health/"
           $login = Invoke-RestMethod "$url/api/v1/auth/login/" -Method Post -ContentType "application/json" -Body '{"username":"cashier","password":"Gold@2026"}'
           if (-not $login.access) { throw "login failed" }
