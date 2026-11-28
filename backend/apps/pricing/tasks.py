@@ -1,9 +1,9 @@
 from celery import shared_task
 
-from .models import PriceSource
-from .providers import sync_source
+from .providers import due_sources, sync_source
 
 
 @shared_task
 def sync_provider_prices():
-    return {s.name: sync_source(s) for s in PriceSource.objects.filter(kind="provider", is_active=True)}
+    """Runs every 15 minutes; each source decides via its own interval whether it is due."""
+    return {s.name: sync_source(s) for s in due_sources()}

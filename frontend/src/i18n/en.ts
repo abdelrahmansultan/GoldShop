@@ -173,6 +173,18 @@ const en = {
       "backup.manage": "Backups",
     },
   },
+  auto: {
+    title: "Automatic prices from the internet", fetch: "Fetch prices from the internet", apiKey: "API key",
+    keySaved: "Key saved ✓ (enter a new one to replace it)", getKey: "Sign up for a free key",
+    sellAdj: "Selling price adjustment %", buyAdj: "Buying price adjustment %",
+    adjHint: "International prices differ from the Egyptian goldsmith market. Adjust both percentages once until the fetched prices match the market you trade at.",
+    autoApply: "Apply prices automatically without review", interval: "Update every (hours)",
+    quota: "The free plan allows about 100 requests a month — every 8 hours ≈ 90 requests.",
+    testFetch: "Test & fetch now", lastFetch: "Last fetch", ounce: "Ounce (24K)", ounceDerived: "calculated from 24K price",
+    review: "Prices fetched from the internet — review and adjust before saving", gram24: "International 24K gram",
+    automatic: "Automatic", noKey: "Set the API key first in the automatic prices settings below.", saveSettings: "Save settings",
+    providerTime: "Provider time",
+  },
   tx: {
     opening: "Opening balance", sale_receipt: "Sale receipt", sale_refund: "Sales refund", old_gold_payout: "Old gold paid out",
     customer_payment: "Customer payment", purchase_payment: "Supplier payment", purchase_refund: "Supplier refund", expense: "Expense",

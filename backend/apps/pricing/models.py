@@ -41,6 +41,16 @@ class PriceSource(TimeStamped):
     last_error = models.CharField(max_length=500, blank=True)
     last_error_at = models.DateTimeField(null=True, blank=True)
 
+    # --- automatic (internet) pricing ---
+    api_key = models.CharField(max_length=200, blank=True, help_text="Provider API key (never returned by the API)")
+    sell_adjust_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0.00"),
+                                              help_text="Added to the international price for the selling price, %")
+    buy_adjust_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("-1.00"),
+                                             help_text="Added to the international price for the buying price, %")
+    auto_apply = models.BooleanField(default=False, help_text="Record fetched prices automatically on a schedule")
+    sync_interval_minutes = models.PositiveIntegerField(default=480)
+    last_quote = models.JSONField(default=dict, blank=True, help_text="Last fetched raw quote (ounce, gram 24K, time)")
+
     def __str__(self):
         return self.name
 

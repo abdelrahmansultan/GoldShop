@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import Cap
 from apps.core.audit import audit
+from apps.core.exceptions import BusinessError
 from apps.core.export import csv_response
 from apps.core.models import ShopSettings
 
@@ -35,6 +36,34 @@ class PriceSourceViewSet(viewsets.ModelViewSet):
     permission_classes = [Cap("prices.manage", read="inventory.view")]
     http_method_names = ["get", "post", "patch", "head", "options"]
     pagination_class = None
+
+    def perform_update(self, s):
+        src = s.save()
+        changed = {k: v for k, v in s.validated_data.items() if k != "api_key"}
+        if "api_key" in s.validated_data:
+            changed["api_key"] = "(changed)"
+        audit(self.request.user, "price_source.updated", src, src.name, changed, request=self.request)
+
+    @action(detail=True, methods=["post"], url_path="fetch")
+    def fetch_prices(self, request, pk=None):
+        """Fetch live market prices and return per-karat proposals. Nothing is saved:
+        the manager reviews them and records them with POST /prices/record/."""
+        from .providers import ProviderUnavailable, fetch
+        src = self.get_object()
+        if src.kind != PriceSource.Kind.PROVIDER:
+            raise BusinessError("This source is not an internet provider.")
+        try:
+            market, quotes = fetch(src)
+        except ProviderUnavailable as exc:
+            raise BusinessError(str(exc), code="provider_unavailable")
+        return Response({
+            "source": src.id, "source_name": src.name,
+            "ounce_price": str(market.ounce_price), "gram_24k": src.last_quote.get("gram_24k"),
+            "provider_time": market.provider_time, "fetched_at": src.last_quote.get("fetched_at"),
+            "sell_adjust_percent": str(src.sell_adjust_percent), "buy_adjust_percent": str(src.buy_adjust_percent),
+            "entries": [{"karat": q.karat_id, "karat_code": q.karat_code, "buy_price": str(q.buy_price),
+                         "sell_price": str(q.sell_price)} for q in quotes],
+        })
 
 
 def _with_previous(qs):
@@ -95,4 +124,22 @@ def board(request):
             "price": GoldPriceSerializer(p).data if p else None,
             "is_stale": r["is_stale"],
         })
-    return Response({"as_of": timezone.now(), "stale_after_hours": stale_hours, "rows": rows})
+    return Response({"as_of": timezone.now(), "stale_after_hours": stale_hours, "rows": rows, "ounce": _ounce(rows)})
+
+
+def _ounce(rows):
+    """Ounce price for display: the last internet quote if fetched today, otherwise derived
+    from today's recorded 24K selling price (labelled as calculated)."""
+    from .providers import TROY_OUNCE_GRAMS
+    src = PriceSource.objects.filter(kind=PriceSource.Kind.PROVIDER, is_active=True).exclude(last_quote={}) \
+        .order_by("-last_success_at").first()
+    if src and src.last_success_at and timezone.localdate(src.last_success_at) == timezone.localdate():
+        return {"price": src.last_quote.get("ounce_price"), "source": src.name, "at": src.last_success_at,
+                "derived": False}
+    r24 = next((r for r in rows if r["karat"]["code"] == "24" and r["price"]), None)
+    if r24:
+        from gold_engine import q_money
+        from decimal import Decimal
+        return {"price": str(q_money(Decimal(r24["price"]["sell_price"]) * TROY_OUNCE_GRAMS)),
+                "source": r24["price"]["source_name"], "at": r24["price"]["effective_at"], "derived": True}
+    return None

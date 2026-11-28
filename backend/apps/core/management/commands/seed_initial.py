@@ -37,6 +37,8 @@ class Command(BaseCommand):
         for ar, en in EXPENSES:
             ExpenseCategory.objects.get_or_create(name_en=en, defaults=dict(name_ar=ar))
         PriceSource.objects.get_or_create(name="Manual", defaults={"kind": "manual"})
+        PriceSource.objects.get_or_create(name="GoldAPI", defaults={
+            "kind": "provider", "provider_key": "goldapi", "notes": "International XAU/EGP price (goldapi.io)"})
         MoneyAccount.objects.get_or_create(name="الخزينة الرئيسية", defaults={"kind": "cash", "is_default": True})
         if o["owner_password"] and not User.objects.filter(username=o["owner_username"]).exists():
             User.objects.create_superuser(o["owner_username"], "", o["owner_password"], role="owner",

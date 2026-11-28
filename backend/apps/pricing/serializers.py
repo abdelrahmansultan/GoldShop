@@ -12,11 +12,44 @@ class KaratSerializer(serializers.ModelSerializer):
 
 
 class PriceSourceSerializer(serializers.ModelSerializer):
+    api_key = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=200)
+    has_api_key = serializers.SerializerMethodField()
+    provider_label = serializers.SerializerMethodField()
+    signup_url = serializers.SerializerMethodField()
+
     class Meta:
         model = PriceSource
-        fields = ["id", "name", "kind", "provider_key", "is_active", "notes", "last_success_at", "last_error",
-                  "last_error_at"]
-        read_only_fields = ["last_success_at", "last_error", "last_error_at"]
+        fields = ["id", "name", "kind", "provider_key", "provider_label", "signup_url", "is_active", "notes",
+                  "api_key", "has_api_key", "sell_adjust_percent", "buy_adjust_percent", "auto_apply",
+                  "sync_interval_minutes", "last_quote", "last_success_at", "last_error", "last_error_at"]
+        read_only_fields = ["last_quote", "last_success_at", "last_error", "last_error_at"]
+
+    def _provider(self, o):
+        from .providers import REGISTRY
+        return REGISTRY.get(o.provider_key)
+
+    def get_has_api_key(self, o):
+        return bool(o.api_key)
+
+    def get_provider_label(self, o):
+        p = self._provider(o)
+        return p.label if p else ""
+
+    def get_signup_url(self, o):
+        p = self._provider(o)
+        return p.signup_url if p else ""
+
+    def validate(self, a):
+        sell = a.get("sell_adjust_percent", getattr(self.instance, "sell_adjust_percent", 0))
+        buy = a.get("buy_adjust_percent", getattr(self.instance, "buy_adjust_percent", 0))
+        if buy > sell:
+            raise serializers.ValidationError({"buy_adjust_percent": "Buying adjustment cannot exceed selling adjustment."})
+        for f in ("sell_adjust_percent", "buy_adjust_percent"):
+            if f in a and abs(a[f]) > 20:
+                raise serializers.ValidationError({f: "Adjustment must be between -20% and +20%."})
+        if "sync_interval_minutes" in a and a["sync_interval_minutes"] < 15:
+            raise serializers.ValidationError({"sync_interval_minutes": "Minimum interval is 15 minutes."})
+        return a
 
 
 class GoldPriceSerializer(serializers.ModelSerializer):

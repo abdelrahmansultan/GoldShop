@@ -163,6 +163,23 @@ def daily_backup():
         log(f"Backup failed: {exc}")
 
 
+def price_sync_loop():
+    """Desktop has no Celery: check every 5 minutes for auto-apply price sources that are due."""
+    time.sleep(20)
+    while True:
+        try:
+            from django.db import close_old_connections
+
+            from apps.pricing.providers import due_sources, sync_source
+            close_old_connections()
+            for src in due_sources():
+                n = sync_source(src)
+                log(f"Price sync {src.name}: {n} prices recorded" if n else f"Price sync {src.name}: failed")
+        except Exception as exc:  # noqa: BLE001 - never let the loop die
+            log(f"Price sync error: {exc}")
+        time.sleep(300)
+
+
 def main():
     for d in (DATA, DATA / "media", DATA / "backups"):
         d.mkdir(parents=True, exist_ok=True)
@@ -172,6 +189,7 @@ def main():
     configure_env(s, pg_port, api_port)
     prepare_database()
     threading.Thread(target=daily_backup, daemon=True).start()
+    threading.Thread(target=price_sync_loop, daemon=True).start()
 
     from waitress import serve
 
